@@ -1,6 +1,10 @@
+import Item from "@/components/Item";
 import NavBar from "@/components/navBar";
-import Image from "next/image";
-
 export default function Home() {
-  return <NavBar />;
+  return (
+    <>
+      <NavBar />
+      <Item />
+    </>
+  );
 }

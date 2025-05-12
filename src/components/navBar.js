@@ -7,7 +7,14 @@ export default function NavBar() {
 
   return (
     <nav className="bg-white shadow-md p-4">
-      <div className="max-w-7xl mx-auto flex justify-end items-center">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="">
+          <img
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSa1hNhxfP_hC-rq3ZchlNzgo1DiIWrmrWBHg&s"
+            alt=""
+            className="w-10 h-10"
+          />
+        </div>
         {session ? (
           <div className="flex items-center gap-4">
             <span className="text-gray-700 font-medium">
