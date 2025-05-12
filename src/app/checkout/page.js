@@ -130,6 +130,7 @@ export default function Checkout() {
     } catch (error) {
       console.error("Email sending error:", error);
       const errorMessage = error.text || error.message || "Unknown error";
+      alert(errorMessage);
       console.error("Error details:", errorMessage);
       setEmailError(errorMessage);
       return false;
