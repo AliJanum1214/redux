@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "alijawad1109@gmail.com",
+      user: "shampi.goli@gmail.com",
       pass: "@Admin1122", // Use App Password from Gmail
     },
   });
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
   // Email content
   const mailOptions = {
-    from: '"Your Store Name" <alijawad1109@gmail.com>',
+    from: '"Your Store Name" <@gmail.com>',
     to: email,
     subject: `Order Confirmation - Order #${orderId}`,
     html: `
@@ -57,12 +57,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, message: "Email sent" });
   } catch (error) {
     console.error("Email sending error:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to send email",
-        error: error.message,
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send email",
+      error: error.message,
+    });
   }
 }

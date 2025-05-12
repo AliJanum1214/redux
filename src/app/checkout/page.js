@@ -19,6 +19,7 @@ export default function Checkout() {
   });
   const [pastOrders, setPastOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -91,7 +92,7 @@ export default function Checkout() {
       // Prepare EmailJS parameters
       const templateParams = {
         to_email: orderDetails.email,
-        from_email: "alijawad1109@gmail.com",
+        from_email: "shampi.goli@gmail.com",
         orderId: orderDetails.orderId,
         trackingId: orderDetails.trackingId,
         name: orderDetails.name,
@@ -128,7 +129,9 @@ export default function Checkout() {
       return true;
     } catch (error) {
       console.error("Email sending error:", error);
-      console.error("Error details:", error.text || error.message || error);
+      const errorMessage = error.text || error.message || "Unknown error";
+      console.error("Error details:", errorMessage);
+      setEmailError(errorMessage);
       return false;
     }
   };
@@ -141,6 +144,7 @@ export default function Checkout() {
     }
 
     setIsLoading(true);
+    setEmailError(null);
 
     const total = cartItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -181,7 +185,11 @@ export default function Checkout() {
       // Send confirmation email
       const emailSent = await sendOrderEmail(orderDetails);
       if (!emailSent) {
-        alert("Order placed, but failed to send confirmation email.");
+        alert(
+          `Order placed, but failed to send confirmation email: ${
+            emailError || "Unknown error"
+          }`
+        );
       } else {
         console.log("Order and email processed successfully");
       }
