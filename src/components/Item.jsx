@@ -4,14 +4,17 @@ import {
   addToCart,
   removeFromCart,
   loadCartFromStorage,
+  updateQuantity,
 } from "../redux/cartSlice";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Item() {
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
   const { data: session } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     dispatch(loadCartFromStorage());
@@ -31,8 +34,22 @@ export default function Item() {
     dispatch(addToCart(item));
   };
 
-  const handleRemove = (index) => {
-    dispatch(removeFromCart(index));
+  const handleQuantityChange = (index, change) => {
+    dispatch(updateQuantity({ index, change }));
+  };
+
+  const handleCheckout = () => {
+    if (!session) {
+      alert("Please log in to proceed to checkout.");
+      return;
+    }
+    const total = cartItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    // Redirect to a checkout page or process payment (placeholder)
+    alert(`Proceeding to checkout. Total: $${total.toFixed(2)}`);
+    router.push("/checkout"); // Adjust to your checkout route
   };
 
   return (
@@ -76,24 +93,60 @@ export default function Item() {
             {cartItems.length === 0 ? (
               <p className="text-gray-500">No items yet.</p>
             ) : (
-              <ul className="space-y-2">
-                {cartItems.map((item, index) => (
-                  <li
-                    key={index}
-                    className="flex justify-between items-center bg-gray-50 px-4 py-2 rounded border"
-                  >
-                    <span className="text-gray-700">
-                      {item.size} - ${item.price}
-                    </span>
-                    <button
-                      onClick={() => handleRemove(index)}
-                      className="text-red-600 hover:text-red-800 font-semibold"
+              <>
+                <ul className="space-y-2">
+                  {cartItems.map((item, index) => (
+                    <li
+                      key={index}
+                      className="flex justify-between items-center bg-gray-50 px-4 py-2 rounded border"
                     >
-                      Delete
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      <span className="text-gray-700">
+                        {item.size} - ${item.price} x {item.quantity}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleQuantityChange(index, -1)}
+                          className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 py-1 rounded"
+                          disabled={item.quantity <= 1}
+                        >
+                          -
+                        </button>
+                        <span>{item.quantity}</span>
+                        <button
+                          onClick={() => handleQuantityChange(index, 1)}
+                          className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 py-1 rounded"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => dispatch(removeFromCart(index))}
+                          className="text-red-600 hover:text-red-800 font-semibold"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 flex justify-between items-center">
+                  <span className="text-lg font-semibold">
+                    Total: $
+                    {cartItems
+                      .reduce(
+                        (sum, item) => sum + item.price * item.quantity,
+                        0
+                      )
+                      .toFixed(2)}
+                  </span>
+                  <button
+                    onClick={handleCheckout}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition"
+                    disabled={cartItems.length === 0}
+                  >
+                    Checkout
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

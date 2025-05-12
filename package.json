@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@reduxjs/toolkit": "^2.8.1",
+    "emailjs": "^4.0.3",
     "mongoose": "^8.14.2",
     "next": "15.3.2",
     "next-auth": "^4.24.11",
+    "nodemailer": "^6.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0"
