@@ -1,5 +1,3 @@
-// src/app/api/orders/route.js
-import mongoose from "mongoose";
 import { Orders } from "@/models/Orders";
 import { connectToDatabase } from "@/libs/db";
 

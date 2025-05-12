@@ -1,3 +1,4 @@
+// src/app/checkout/page.js
 "use client";
 import { useDispatch, useSelector } from "react-redux";
 import { useSession } from "next-auth/react";
@@ -17,6 +18,7 @@ export default function Checkout() {
     address: "",
   });
   const [pastOrders, setPastOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -88,32 +90,45 @@ export default function Checkout() {
 
       // Prepare EmailJS parameters
       const templateParams = {
-        to_email: orderDetails.email, // Recipient email
-        from_email: "alijawad1109@gmail.com", // Sender email
+        to_email: orderDetails.email,
+        from_email: "alijawad1109@gmail.com",
         orderId: orderDetails.orderId,
         trackingId: orderDetails.trackingId,
         name: orderDetails.name,
         address: orderDetails.address,
         orderDate: new Date(orderDetails.date).toLocaleDateString(),
-        itemsHtml: itemsHtml,
+        itemsHtml,
         total: orderDetails.total.toFixed(2),
       };
 
       // Log parameters for debugging
       console.log("EmailJS parameters:", templateParams);
 
+      // Verify environment variables
+      const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+      const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+      const userId = process.env.NEXT_PUBLIC_EMAILJS_USER_ID;
+      console.log("EmailJS config:", { serviceId, templateId, userId });
+      if (!serviceId || !templateId || !userId) {
+        throw new Error(
+          `Missing EmailJS configuration: serviceId=${serviceId}, templateId=${templateId}, userId=${userId}`
+        );
+      }
+
+      // Initialize EmailJS with user ID
+      emailjs.init(userId);
+
       // Send email using EmailJS
       const response = await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID, // service_2huyn1k
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
-        templateParams,
-        process.env.NEXT_PUBLIC_EMAILJS_USER_ID
+        serviceId,
+        templateId,
+        templateParams
       );
-
       console.log("Email sent successfully:", response.status, response.text);
       return true;
     } catch (error) {
-      console.log("Email sending error:", error.message);
+      console.error("Email sending error:", error);
+      console.error("Error details:", error.text || error.message || error);
       return false;
     }
   };
@@ -124,6 +139,8 @@ export default function Checkout() {
       alert("Please fill in all fields.");
       return;
     }
+
+    setIsLoading(true);
 
     const total = cartItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -177,6 +194,8 @@ export default function Checkout() {
     } catch (error) {
       console.error("Order submission error:", error.message);
       alert(`An error occurred while placing the order: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -303,9 +322,9 @@ export default function Checkout() {
             <button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition disabled:bg-gray-400"
-              disabled={cartItems.length === 0}
+              disabled={cartItems.length === 0 || isLoading}
             >
-              Place Order
+              {isLoading ? "Processing..." : "Place Order"}
             </button>
           </form>
         </div>
