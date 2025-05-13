@@ -1,27 +1,20 @@
 // pages/api/send-order-email.js
-import nodemailer from "nodemailer";
+import emailjs from "@emailjs/browser";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method Not Allowed" });
   }
 
-  const { orderId, trackingId, name, email, address, items, total, date } =
-    req.body;
+  const { orderId, email, items, total, date } = req.body;
 
   // Validate request body
   if (!email || !items || !orderId) {
     return res.status(400).json({ message: "Missing required fields" });
   }
-
-  // Setup Nodemailer transporter
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: "shampi.goli@gmail.com",
-      pass: "@Admin1122", // Use App Password from Gmail
-    },
-  });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ message: "Invalid email address" });
+  }
 
   // Format order items for email
   const itemsHtml = items
@@ -33,34 +26,38 @@ export default async function handler(req, res) {
     )
     .join("");
 
-  // Email content
-  const mailOptions = {
-    from: '"Your Store Name" <@gmail.com>',
-    to: email,
-    subject: `Order Confirmation - Order #${orderId}`,
-    html: `
-      <h2>Thank You for Your Order!</h2>
-      <p><strong>Order ID:</strong> ${orderId}</p>
-      <p><strong>Tracking ID:</strong> ${trackingId}</p>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Shipping Address:</strong> ${address}</p>
-      <p><strong>Order Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-      <h3>Order Items:</h3>
-      <ul>${itemsHtml}</ul>
-      <p><strong>Total:</strong> $${total.toFixed(2)}</p>
-      <p>We will notify you when your order ships.</p>
-    `,
+  // Prepare EmailJS parameters
+  const templateParams = {
+    to_email: email,
+    orderId,
+    orderDate: new Date(date).toLocaleDateString(),
+    itemsHtml,
+    total: total.toFixed(2),
+    address: "Shadbagh", // Hardcoded address
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    // Hardcoded EmailJS IDs
+    const serviceId = "service_2huyn1k";
+    const templateId = "template_cc2gwm9";
+    const userId = "UPOaZx461aH81q0sO"; // Use environment variable
+
+    if (!userId) {
+      throw new Error("Missing EmailJS user ID");
+    }
+
+    // Initialize EmailJS with user ID
+    emailjs.init(userId);
+
+    // Send email using EmailJS
+    const response = await emailjs.send(serviceId, templateId, templateParams);
     return res.status(200).json({ success: true, message: "Email sent" });
   } catch (error) {
     console.error("Email sending error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to send email",
-      error: error.message,
+      error: error.message || error.text || "Unknown error",
     });
   }
 }

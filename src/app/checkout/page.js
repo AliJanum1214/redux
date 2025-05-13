@@ -1,4 +1,3 @@
-// src/app/checkout/page.js
 "use client";
 import { useDispatch, useSelector } from "react-redux";
 import { useSession } from "next-auth/react";
@@ -15,7 +14,6 @@ export default function Checkout() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    address: "",
   });
   const [pastOrders, setPastOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +34,7 @@ export default function Checkout() {
         name: session.user.name || "",
         email: session.user.email || "",
       }));
+      console.log("Session user email:", session.user.email); // Debug session email
     }
   }, [session]);
 
@@ -71,12 +70,15 @@ export default function Checkout() {
 
   const sendOrderEmail = async (orderDetails) => {
     try {
+      // Log email for debugging
+      console.log("Attempting to send email to:", orderDetails.email);
+
       // Validate email
-      if (
-        !orderDetails.email ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orderDetails.email)
-      ) {
-        throw new Error("Invalid email address");
+      if (!orderDetails.email) {
+        throw new Error("Email address is missing");
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orderDetails.email)) {
+        throw new Error("Invalid email address format");
       }
 
       // Format items for email
@@ -92,11 +94,7 @@ export default function Checkout() {
       // Prepare EmailJS parameters
       const templateParams = {
         to_email: orderDetails.email,
-        from_email: "shampi.goli@gmail.com",
         orderId: orderDetails.orderId,
-        trackingId: orderDetails.trackingId,
-        name: orderDetails.name,
-        address: orderDetails.address,
         orderDate: new Date(orderDetails.date).toLocaleDateString(),
         itemsHtml,
         total: orderDetails.total.toFixed(2),
@@ -105,15 +103,13 @@ export default function Checkout() {
       // Log parameters for debugging
       console.log("EmailJS parameters:", templateParams);
 
-      // Verify environment variables
-      const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-      const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
-      const userId = process.env.NEXT_PUBLIC_EMAILJS_USER_ID;
-      console.log("EmailJS config:", { serviceId, templateId, userId });
-      if (!serviceId || !templateId || !userId) {
-        throw new Error(
-          `Missing EmailJS configuration: serviceId=${serviceId}, templateId=${templateId}, userId=${userId}`
-        );
+      // Hardcoded EmailJS IDs
+      const serviceId = "service_2huyn1k";
+      const templateId = "template_cc2gwm9";
+      const userId = "UPOaZx461aH81q0sO";
+
+      if (!userId) {
+        throw new Error("Missing EmailJS user ID");
       }
 
       // Initialize EmailJS with user ID
@@ -129,9 +125,10 @@ export default function Checkout() {
       return true;
     } catch (error) {
       console.error("Email sending error:", error);
-      const errorMessage = error.text || error.message || "Unknown error";
-      alert(errorMessage);
+      const errorMessage =
+        error.message || error.text || "Failed to send email";
       console.error("Error details:", errorMessage);
+      alert(`Email sending failed: ${errorMessage}`);
       setEmailError(errorMessage);
       return false;
     }
@@ -139,8 +136,17 @@ export default function Checkout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.address) {
+
+    // Log form data for debugging
+    console.log("Form data:", formData);
+
+    // Validate form inputs
+    if (!formData.name || !formData.email) {
       alert("Please fill in all fields.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      alert("Please enter a valid email address.");
       return;
     }
 
@@ -162,7 +168,6 @@ export default function Checkout() {
       status: "Processing",
       name: formData.name,
       email: formData.email,
-      address: formData.address,
       items: cartItems,
       total,
       date: new Date().toISOString(),
@@ -201,19 +206,20 @@ export default function Checkout() {
       // Redirect to confirmation
       router.push("/order-confirmation");
     } catch (error) {
-      console.error("Order submission error:", error.message);
-      alert(`An error occurred while placing the order: ${error.message}`);
-    } finally {
-      setIsLoading(false);
+      console.error("Full error object:", error);
+      console.error("EmailJS error text:", error.text);
+      const errorMessage =
+        error.text || error.message || "Failed to send email";
+      setEmailError(errorMessage);
+      return false;
     }
   };
-
   const total = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  if (status === "loading" || !process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID) {
+  if (status === "loading") {
     return <div className="text-center my-10">Loading...</div>;
   }
 
@@ -274,7 +280,7 @@ export default function Checkout() {
         {/* Checkout Form */}
         <div className="flex-1">
           <h2 className="text-xl font-semibold text-gray-700 mb-3">
-            Shipping Information
+            Billing Information
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -310,23 +316,6 @@ export default function Checkout() {
                 className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
-            </div>
-            <div>
-              <label
-                htmlFor="address"
-                className="block text-gray-700 font-medium mb-1"
-              >
-                Shipping Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows="4"
-                required
-              ></textarea>
             </div>
             <button
               type="submit"
